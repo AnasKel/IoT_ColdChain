@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Température & Humidité</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    body {
+      background: #f4f7fb;
+    }
+    .card-metric {
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+      transition: transform .2s;
+    }
+    .card-metric:hover {
+      transform: translateY(-5px);
+    }
+    .metric-value {
+      font-size: 3rem;
+      font-weight: 800;
+    }
+    .incident-box {
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    }
+    textarea {
+      resize: none;
+    }
+    /* ===== INCIDENT BADGE STYLE (FIX VISUEL UNIQUEMENT) ===== */
+    #incident-badge {
+      padding: 0.5rem 1.1rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border-radius: 999px; /* pill */
+      text-transform: uppercase;
+    }
+
+    /* OK */
+    #incident-badge.bg-success {
+      background-color: #198754 !important;
+      color: #fff;
+    }
+
+    /* ALERTE */
+    #incident-badge.bg-danger {
+      background-color: #dc3545 !important;
+      color: #fff;
+    }
+
+    #manual-status.text-success {
+      color: #198754;
+    }
+
+    #manual-status.text-danger {
+      color: #dc3545;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-dark navbar-expand-lg bg-dark shadow-sm">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="#">IoT Supervision</a>
+
+    <div class="collapse navbar-collapse show">
+      <ul class="navbar-nav ms-auto align-items-center gap-2">
+
+        <li class="nav-item">
+          <a class="nav-link active" href="/">Dashboard</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="/incident/archive/">Historique incidents</a>
+        </li>
+
+        <!-- USER CONNECTÉ -->
+        <li class="nav-item dropdown ms-3">
+          <a class="nav-link dropdown-toggle d-flex align-items-center"
+             href="#"
+             role="button"
+             data-bs-toggle="dropdown"
+             aria-expanded="false">
+            <i class="bi bi-person-circle fs-5 me-1"></i>
+            {{ request.user.username }}
+          </a>
+
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <span class="dropdown-item-text text-muted small">
+                Connecté
+              </span>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form method="post" action="{% url 'logout' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item text-danger">
+                  <i class="bi bi-box-arrow-right me-1"></i> Déconnexion
+                </button>
+              </form>
+            </li>
+          </ul>
+        </li>
+
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- HEADER -->
+<div class="container text-center my-5">
+  <h1 class="fw-bold">Dashboard Température & Humidité</h1>
+  <p class="text-muted">Capteur DHT11 – supervision temps réel</p>
+</div>
+
+<!-- METRICS -->
+<div class="container mb-5">
+  <div class="row g-4">
+
+    <!-- TEMP -->
+    <div class="col-md-6">
+      <div class="card card-metric text-center p-4">
+        <div class="text-primary fs-1 mb-2">
+          <i class="bi bi-thermometer-half"></i>
+        </div>
+        <h5 class="fw-bold">Température</h5>
+        <div id="temp" class="metric-value text-primary">-- °C</div>
+        <div id="temp-time" class="text-muted mb-3">--</div>
+        <a href="/graph_temp/" class="btn btn-primary w-100">
+          Voir graphe température
+        </a>
+      </div>
+    </div>
+
+    <!-- HUM -->
+    <div class="col-md-6">
+      <div class="card card-metric text-center p-4">
+        <div class="text-success fs-1 mb-2">
+          <i class="bi bi-droplet-half"></i>
+        </div>
+        <h5 class="fw-bold">Humidité</h5>
+        <div id="hum" class="metric-value text-success">-- %</div>
+        <div id="hum-time" class="text-muted mb-3">--</div>
+        <a href="/graph_hum/" class="btn btn-success w-100">
+          Voir graphe humidité
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- AJOUT MANUEL MESURE -->
+<div class="container mb-5">
+  <div class="card incident-box p-4">
+
+    <div class="d-flex align-items-center mb-2">
+      <h4 class="fw-bold mb-0">Ajouter une mesure</h4>
+    </div>
+
+    <p class="text-muted mb-4">
+      Ajout manuel d’une mesure de température et d’humidité pour test du système
+    </p>
+
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">
+          Température (°C)
+        </label>
+        <input
+          type="number"
+          step="0.1"
+          id="manual-temp"
+          class="form-control form-control-lg"
+          placeholder="Ex : 5.0"
+        >
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">
+          Humidité (%)
+        </label>
+        <input
+          type="number"
+          step="0.1"
+          id="manual-hum"
+          class="form-control form-control-lg"
+          placeholder="Ex : 75"
+        >
+      </div>
+
+      <div class="col-md-4 d-grid">
+        <button
+          type="button"
+          id="send-measure"
+          class="btn btn-primary btn-lg"
+        >
+          <i class="bi bi-send me-2"></i>
+          Envoyer la mesure
+        </button>
+      </div>
+    </div>
+
+    <!-- MESSAGE -->
+    <div
+      id="manual-status"
+      class="mt-3 fw-semibold"
+    ></div>
+
+  </div>
+</div>
+
+<!-- INCIDENTS -->
+<div class="container mb-5">
+  <div class="incident-box bg-white p-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="fw-bold mb-0">
+        Incidents (Température hors plage 2–8 °C)
+      </h4>
+      <span id="incident-badge" class="badge bg-success">OK</span>
+    </div>
+
+    <p>Statut : <strong id="incident-status">Pas d’incident</strong></p>
+    <p>Compteur d’alertes : <strong id="incident-counter">0</strong></p>
+
+    <div class="row g-4 mt-3">
+
+      <!-- OP 1 -->
+      <div id="op1" class="col-md-4 d-none">
+        <div class="border rounded p-3 h-100">
+          <h6 class="fw-bold">Opérateur 1</h6>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="op1_ack">
+            <label class="form-check-label">Accusé de réception</label>
+          </div>
+          <textarea id="op1_comment" class="form-control mb-2" rows="3"></textarea>
+          <button id="op1_save" class="btn btn-primary w-100 mb-2">Valider</button>
+
+          <small class="text-muted d-block">Dernière validation : <span id="op1_status">-</span></small>
+          <small class="text-muted d-block">Accusé : <span id="op1_ack_status">Non validé</span></small>
+          <small>Commentaire : <span id="op1_show">-</span></small>
+        </div>
+      </div>
+
+      <!-- OP 2 -->
+      <div id="op2" class="col-md-4 d-none">
+        <div class="border rounded p-3 h-100">
+          <h6 class="fw-bold">Opérateur 2</h6>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="op2_ack">
+            <label class="form-check-label">Accusé de réception</label>
+          </div>
+          <textarea id="op2_comment" class="form-control mb-2" rows="3"></textarea>
+          <button id="op2_save" class="btn btn-primary w-100 mb-2">Valider</button>
+
+          <small class="text-muted d-block">Dernière validation : <span id="op2_status">-</span></small>
+          <small class="text-muted d-block">Accusé : <span id="op2_ack_status">Non validé</span></small>
+          <small>Commentaire : <span id="op2_show">-</span></small>
+        </div>
+      </div>
+
+      <!-- OP 3 -->
+      <div id="op3" class="col-md-4 d-none">
+        <div class="border rounded p-3 h-100">
+          <h6 class="fw-bold">Opérateur 3</h6>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="op3_ack">
+            <label class="form-check-label">Accusé de réception</label>
+          </div>
+          <textarea id="op3_comment" class="form-control mb-2" rows="3"></textarea>
+          <button id="op3_save" class="btn btn-primary w-100 mb-2">Valider</button>
+
+          <small class="text-muted d-block">Dernière validation : <span id="op3_status">-</span></small>
+          <small class="text-muted d-block">Accusé : <span id="op3_ack_status">Non validé</span></small>
+          <small>Commentaire : <span id="op3_show">-</span></small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/dashboard.js"></script>
+
+<script>
+  // adaptation hidden -> bootstrap d-none
+  const observer = new MutationObserver(() => {
+    ["op1","op2","op3"].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.toggle("d-none", el.classList.contains("hidden"));
+    });
+  });
+  observer.observe(document.body, {subtree:true, attributes:true});
+</script>
+<script>
+  const badge = document.getElementById("incident-badge");
+
+  const badgeObserver = new MutationObserver(() => {
+    const text = badge.textContent.trim().toUpperCase();
+
+    if (text === "ALERTE") {
+      badge.classList.remove("bg-success");
+      badge.classList.add("bg-danger");
+    } else if (text === "OK") {
+      badge.classList.remove("bg-danger");
+      badge.classList.add("bg-success");
+    }
+  });
+
+  badgeObserver.observe(badge, {
+    childList: true,
+    subtree: true
+  });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* ===== CSRF ===== */
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.startsWith(name + "=")) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const btn = document.getElementById("send-measure");
+  const statusEl = document.getElementById("manual-status");
+
+  if (!btn) {
+    console.error("Bouton introuvable");
+    return;
+  }
+
+  btn.addEventListener("click", async () => {
+    console.log("🟢 Bouton cliqué");
+
+    const temp = document.getElementById("manual-temp").value;
+    const hum  = document.getElementById("manual-hum").value;
+
+    if (temp === "" || hum === "") {
+      statusEl.textContent = "Température et humidité obligatoires";
+      statusEl.className = "text-danger";
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/post/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken")
+        },
+        body: JSON.stringify({
+          temp: Number(temp),
+          hum: Number(hum)
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("Erreur API");
+      }
+
+      statusEl.textContent = "Mesure envoyée avec succès";
+      statusEl.className = "text-success";
+
+      document.getElementById("manual-temp").value = "";
+      document.getElementById("manual-hum").value = "";
+
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "Erreur lors de l’envoi";
+      statusEl.className = "text-danger";
+    }
+  });
+});
+</script>
+
+</body>
+</html>

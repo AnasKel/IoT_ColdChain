@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Archives des incidents</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    body {
+      background: #f4f7fb;
+    }
+    .card-box {
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    }
+    table th {
+      background: #f1f5ff;
+      font-weight: 600;
+    }
+    table td {
+      vertical-align: middle;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-dark navbar-expand-lg bg-dark shadow-sm">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="#">IoT Supervision</a>
+
+    <div class="collapse navbar-collapse show">
+      <ul class="navbar-nav ms-auto align-items-center gap-2">
+
+        <li class="nav-item">
+          <a class="nav-link" href="/">Dashboard</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link active" href="/incident/archive/">Historique incidents</a>
+        </li>
+
+        <!-- USER CONNECTÉ -->
+        <li class="nav-item dropdown ms-3">
+          <a class="nav-link dropdown-toggle d-flex align-items-center"
+             href="#"
+             role="button"
+             data-bs-toggle="dropdown"
+             aria-expanded="false">
+            <i class="bi bi-person-circle fs-5 me-1"></i>
+            {{ request.user.username }}
+          </a>
+
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <span class="dropdown-item-text text-muted small">
+                Connecté
+              </span>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item text-danger">
+                  <i class="bi bi-box-arrow-right me-1"></i> Déconnexion
+                </button>
+              </form>
+            </li>
+          </ul>
+        </li>
+
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- HEADER -->
+<div class="container my-5 text-center">
+  <h1 class="fw-bold">Archives des incidents</h1>
+  <p class="text-muted">Historique des incidents clôturés</p>
+</div>
+
+<!-- ACTIONS -->
+<div class="container mb-3 d-flex justify-content-between align-items-center">
+  <a href="/" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i> Retour au dashboard
+  </a>
+
+  <button id="export-incidents-csv" class="btn btn-outline-primary">
+    <i class="bi bi-download me-1"></i> Export CSV
+  </button>
+</div>
+
+<!-- TABLE -->
+<div class="container mb-5">
+  <div class="card card-box p-4">
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Début</th>
+            <th>Fin</th>
+            <th>Température min</th>
+            <th>Température max</th>
+            <th>Compteur</th>
+            <th>État</th>
+            <th>Détails</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inc in incidents %}
+          <tr>
+            <td>#{{ inc.id }}</td>
+            <td>{{ inc.start_at|date:"d/m/Y H:i:s" }}</td>
+            <td>
+              {% if inc.is_open %}
+                <span class="text-success fw-semibold">En cours</span>
+              {% else %}
+                {{ inc.end_at|date:"d/m/Y H:i:s" }}
+              {% endif %}
+            </td>
+
+            <td class="text-muted">{{ inc.min_temp }} °C</td>
+            <td class="fw-semibold">{{ inc.max_temp }} °C</td>
+            <td>{{ inc.counter }}</td>
+
+            <td>
+              {% if inc.is_open %}
+                <span class="badge bg-success">Ouvert</span>
+              {% else %}
+                <span class="badge bg-danger">Fermé</span>
+              {% endif %}
+            </td>
+
+            <td>
+              <a href="{% url 'incident_detail' inc.id %}" class="btn btn-sm btn-outline-primary">
+                Voir
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted">
+              Aucun incident archivé.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DONNÉES DJANGO → JS -->
+<script>
+  const INCIDENTS_DATA = [
+    {% for inc in incidents %}
+    {
+      id: {{ inc.id }},
+      start_at: "{{ inc.start_at|date:'c' }}",
+      end_at: "{% if inc.is_open %}En cours{% else %}{{ inc.end_at|date:'c' }}{% endif %}",
+
+      min_temp:
+        {% if inc.min_temp is not None %}
+          {{ inc.min_temp }}
+        {% else %}
+          null
+        {% endif %},
+
+      max_temp: {{ inc.max_temp }},
+      counter: {{ inc.counter }},
+      status: "{% if inc.is_open %}OUVERT{% else %}FERME{% endif %}"
+    },
+    {% endfor %}
+  ];
+</script>
+
+<!-- EXPORT CSV JS -->
+<script>
+function exportIncidentsCSV(data) {
+  let csv = "sep=;\n";
+  csv += "ID;Debut;Fin;Temperature min;Temperature max;Compteur;Etat\n";
+
+  data.forEach(inc => {
+    const start = new Date(inc.start_at).toLocaleString("fr-FR");
+    const end =
+      inc.end_at === "En cours"
+        ? "En cours"
+        : new Date(inc.end_at).toLocaleString("fr-FR");
+
+    csv +=
+      `="${inc.id}";` +
+      `="${start}";` +
+      `="${end}";` +
+      `="${inc.min_temp === null ? '' : inc.min_temp}";` +
+      `="${inc.max_temp}";` +
+      `="${inc.counter}";` +
+      `="${inc.status}"\n`;
+  });
+
+  const BOM = "\uFEFF";
+  const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "historique_incidents.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("export-incidents-csv").addEventListener("click", () => {
+  exportIncidentsCSV(INCIDENTS_DATA);
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
