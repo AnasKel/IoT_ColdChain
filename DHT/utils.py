@@ -61,3 +61,30 @@ def make_voice_call(temp, date):
     except Exception as e:
         print("Erreur appel vocal:", e)
         return False
+
+
+
+
+def send_email_brevo(subject, html_content, to_email):
+    url = "https://api.brevo.com/v3/smtp/email"
+
+    headers = {
+        "accept": "application/json",
+        "api-key": settings.BREVO_API_KEY,
+        "content-type": "application/json"
+    }
+
+    data = {
+        "sender": {
+            "name": settings.BREVO_SENDER_NAME,
+            "email": settings.BREVO_SENDER_EMAIL
+        },
+        "to": [
+            {"email": to_email}
+        ],
+        "subject": subject,
+        "htmlContent": html_content
+    }
+
+    response = requests.post(url, json=data, headers=headers)
+    return response.status_code == 201

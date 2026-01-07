@@ -119,6 +119,13 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_TIMEOUT = 10
 
 # ======================
+# BREVO (EMAIL API)
+# ======================
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_SENDER_EMAIL = "anaskelouch2@gmail.com"
+BREVO_SENDER_NAME = "IoT ColdChain"
+
+# ======================
 # TELEGRAM
 # ======================
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")

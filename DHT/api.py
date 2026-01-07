@@ -67,17 +67,20 @@ class Dhtviews(generics.CreateAPIView):
 
                 # 📧 EMAIL
                 try:
-                    send_mail(
-                        subject="⚠️ Incident Température DHT11",
-                        message=(
-                            f"Un incident a été détecté.\n\n"
-                            f"Température mesurée : {t:.1f} °C\n"
-                            f"Date : {obj.dt}\n"
-                            f"Seuil autorisé : [{MIN_OK}°C – {MAX_OK}°C]"
-                        ),
-                        from_email=settings.EMAIL_HOST_USER,
-                        recipient_list=["anaskelouch@gmail.com"],
-                        fail_silently=True,
+                    from .utils import send_email_brevo
+
+                    send_email_brevo(
+                        subject="⚠️ Alerte Température – Incident détecté (IoT ColdChain)",
+                        html_content=f"""
+                            <h2 style="color:red;">🚨 Incident Température détecté</h2>
+                            <p><b>Température :</b> {t:.1f} °C</p>
+                            <p><b>Date :</b> {obj.dt}</p>
+                            <p><b>Plage autorisée :</b> {MIN_OK}°C – {MAX_OK}°C</p>
+                            <p>Merci d’intervenir immédiatement.</p>
+                            <hr>
+                            <p><i>IoT ColdChain – Système de supervision</i></p>
+                        """,
+                        to_email="anaskelouch@gmail.com"
                     )
                 except Exception as e:
                     print("EMAIL ERROR:", e)
