@@ -57,6 +57,14 @@ class Dhtviews(generics.CreateAPIView):
                     date=obj.dt
                 )
 
+                # 📲 TELEGRAM
+                send_telegram(
+                    f"🚨 INCIDENT DHT11\n"
+                    f"Température : {t:.1f} °C\n"
+                    f"Date : {obj.dt}\n"
+                    f"Seuil : {MIN_OK}–{MAX_OK} °C"
+                )
+
                 # 📧 EMAIL
                 try:
                     send_mail(
@@ -74,13 +82,6 @@ class Dhtviews(generics.CreateAPIView):
                 except Exception as e:
                     print("EMAIL ERROR:", e)
 
-                # 📲 TELEGRAM
-                send_telegram(
-                    f"🚨 INCIDENT DHT11\n"
-                    f"Température : {t:.1f} °C\n"
-                    f"Date : {obj.dt}\n"
-                    f"Seuil : {MIN_OK}–{MAX_OK} °C"
-                )
 
             # 🔁 INCIDENT DÉJÀ OUVERT
             else:
