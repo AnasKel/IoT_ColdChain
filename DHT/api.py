@@ -71,8 +71,8 @@ class Dhtviews(generics.CreateAPIView):
                         recipient_list=["anaskelouch@gmail.com"],
                         fail_silently=True,
                     )
-                except Exception:
-                    pass
+                except Exception as e:
+                    print("EMAIL ERROR:", e)
 
                 # 📲 TELEGRAM
                 send_telegram(

@@ -3,14 +3,32 @@ from django.conf import settings
 from twilio.rest import Client
 
 def send_telegram(text: str) -> bool:
-    """Envoie un message Telegram via l'API officielle. Retourne True si OK."""
     token = settings.TELEGRAM_BOT_TOKEN
     chat_id = settings.TELEGRAM_CHAT_ID
+
+    if not token or not chat_id:
+        print("❌ TELEGRAM: token ou chat_id manquant")
+        return False
+
     url = f"https://api.telegram.org/bot{token}/sendMessage"
+
     try:
-        r = requests.post(url, data={"chat_id": chat_id, "text": text})
+        r = requests.post(
+            url,
+            json={
+                "chat_id": chat_id,
+                "text": text
+            },
+            timeout=10
+        )
+
+        print("📲 TELEGRAM STATUS:", r.status_code)
+        print("📲 TELEGRAM RESPONSE:", r.text)
+
         return r.ok
-    except Exception:
+
+    except Exception as e:
+        print("❌ TELEGRAM ERROR:", e)
         return False
 
 
