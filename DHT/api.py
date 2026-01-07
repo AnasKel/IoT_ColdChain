@@ -10,6 +10,10 @@ from .utils import send_telegram
 
 from .utils import make_voice_call
 
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
+
 MIN_OK = 2
 MAX_OK = 8
 
@@ -18,7 +22,7 @@ class DList(generics.ListAPIView):
     queryset = Dht11.objects.all()
     serializer_class = Dht11Serializer
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class Dhtviews(generics.CreateAPIView):
     queryset = Dht11.objects.all()
     serializer_class = Dht11Serializer
@@ -103,6 +107,7 @@ class IncidentStatus(APIView):
         return Response(IncidentSerializer(incident).data)
 
 # ---- API incident: valider ACK + commentaire (op1/op2/op3) ----
+@method_decorator(csrf_exempt, name='dispatch')
 class IncidentUpdateOperator(APIView):
     def post(self, request):
         """
